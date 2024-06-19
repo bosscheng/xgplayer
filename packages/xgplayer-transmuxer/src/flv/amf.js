@@ -1,5 +1,8 @@
 import { UTF8 } from '../utils'
 
+/**
+ * AMF(Action Message Format)是Flash与服务端通信的一种常见的二进制编码模式，其传输效率高，可以在HTTP层面上传输。现在很多Flash WebGame都采用这样的消息格式。
+ */
 export class AMF {
   static parse (data) {
     if (data.length < 3) return

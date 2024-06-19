@@ -11,6 +11,9 @@ const MAX_DTS_DELTA_WITH_NEXT_CHUNK = 200 // ms
 const VIDEO_EXCETION_LOG_EMIT_DURATION = 5000 // 5s
 const TRACK_BREACKED_CHECK_TIME = 5
 
+/**
+ *  flv fixer
+ */
 export class FlvFixer {
   constructor (videoTrack, audioTrack, metadataTrack) {
     this.videoTrack = videoTrack

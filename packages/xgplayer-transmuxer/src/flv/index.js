@@ -76,7 +76,10 @@ export class FlvDemuxer {
       }
     }
 
+    // flv header: 9 bytes
     let offset = 0
+
+    // 解析flv header
     if (!this._headerParsed) {
       if (!FlvDemuxer.probe(data)) {
         throw new Error('Invalid flv file')
@@ -84,6 +87,7 @@ export class FlvDemuxer {
       audioTrack.present = ((data[4] & 4) >>> 2) !== 0
       videoTrack.present = (data[4] & 1) !== 0
       this._headerParsed = true
+      // 9 bytes
       offset = readBig32(data, 5) + 4 // skip prev tag size
     }
 
@@ -94,10 +98,16 @@ export class FlvDemuxer {
     let timestamp
     let bodyData
     let prevTagSize
+    // tag header: 11 bytes
     while ((offset + 15) < dataLen) { // header and prev tag size
+      // tag header
       tagType = data[offset]
+      //
       dataSize = (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3]
+      // 如果数据不够，跳出循环
       if (offset + 15 + dataSize > dataLen) break
+
+      //
       timestamp = (
         (data[offset + 7] << 24 >>> 0) +
         (data[offset + 4] << 16) +
@@ -175,6 +185,7 @@ export class FlvDemuxer {
   }
 
   /**
+   * 判断是否是flv文件
    * @param { Uint8Array } data
    * @returns {boolean}
    */
