@@ -14,7 +14,11 @@ function defaultOpt() {
     preloadTime: 180,
     bufferBehind: 10,
     maxJumpDistance: 3,
-    startTime: 0
+    startTime: 0,
+    fixerConfig:{
+      forceFixLargeGap:true,
+      largeGapThreshold: 5
+    }
   }
 }
 var cachedOpt = localStorage.getItem('xg:test:hls:opt')

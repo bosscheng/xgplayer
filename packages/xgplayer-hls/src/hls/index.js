@@ -470,17 +470,19 @@ export class Hls extends EventEmitter {
    */
   _loadSegment = async () => {
     if (this._segmentProcessing || !this.media) return
-    const nextSeg = this._playlist.nextSegment
+    const { nextSegment, lastSegment } = this._playlist
     const { config } = this
+    // Constrain in the range of 0.016 ~ 0.1, 0.016 is the duration of 1 frame at 60fps
+    const maxBufferThroughout = Math.min(Math.max(lastSegment?.duration || 0, 0.016), 0.1)
 
-    if (!nextSeg) return
+    if (!nextSegment) return
 
     if (!this.isLive) {
       let bInfo = this.bufferInfo()
       if (this.media.paused && !this.media.currentTime) {
         bInfo = this.bufferInfo(bInfo.nextStart || 0.5)
       }
-      const bufferThroughout = Math.abs(bInfo.end - this.media.duration) < 0.1
+      const bufferThroughout = Math.abs(bInfo.end - this.media.duration) < maxBufferThroughout
       if (bInfo.remaining >= config.preloadTime || bufferThroughout) {
         this._tryEos()
         return
@@ -492,9 +494,9 @@ export class Hls extends EventEmitter {
 
       // reset segment pointer by buffer end
       if (!this._urlSwitching &&
-        this._prevSegSn !== nextSeg.sn - 1 &&
+        this._prevSegSn !== nextSegment.sn - 1 &&
         bInfo.end &&
-        Math.abs(nextSeg.start - bInfo.end) > 1) {
+        Math.abs(nextSegment.start - bInfo.end) > 1) {
         this._playlist.setNextSegmentByIndex(this._playlist.findSegmentIndexByTime(bInfo.end + 0.1))
       }
     }
@@ -916,7 +918,11 @@ export class Hls extends EventEmitter {
     const { media } = this
     const { nextSegment, lastSegment } = this._playlist
     const eosAllowed =
-      !nextSegment &&
+      (!nextSegment ||
+        (lastSegment &&
+          // Use the mid-time of lastSegment to determine
+          // whether the Media Buffer has been buffered to the end
+          Buffer.isBuffered(media, lastSegment.start + lastSegment.duration / 2))) &&
       media.readyState &&
       media.duration > 0 &&
       this._bufferService?.msIsOpened &&

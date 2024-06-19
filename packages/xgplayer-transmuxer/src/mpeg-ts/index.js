@@ -17,11 +17,11 @@ export class TsDemuxer {
    * @param {AudioTrack} [audioTrack]
    * @param {MetadataTrack} [metadataTrack]
    */
-  constructor (videoTrack, audioTrack, metadataTrack) {
+  constructor (videoTrack, audioTrack, metadataTrack, fixerConfig = {}) {
     this.videoTrack = videoTrack || new VideoTrack()
     this.audioTrack = audioTrack || new AudioTrack()
     this.metadataTrack = metadataTrack || new MetadataTrack()
-    this._fixer = new TsFixer(this.videoTrack, this.audioTrack, this.metadataTrack)
+    this._fixer = new TsFixer(this.videoTrack, this.audioTrack, this.metadataTrack, fixerConfig)
   }
 
   /**

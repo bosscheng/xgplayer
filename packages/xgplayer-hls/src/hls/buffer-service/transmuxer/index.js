@@ -7,9 +7,9 @@ const logger = new Logger('Transmuxer')
 export class Transmuxer {
   _initSegmentId = ''
 
-  constructor (hls, isMP4, needRemux) {
+  constructor (hls, isMP4, needRemux, fixerConfig) {
     this.hls = hls
-    this._demuxer = isMP4 ? new FMP4Demuxer() : new TsDemuxer()
+    this._demuxer = isMP4 ? new FMP4Demuxer() : new TsDemuxer(null, null, null, fixerConfig)
     this._isMP4 = isMP4
     if (needRemux) this._remuxer = new FMP4Remuxer(this._demuxer.videoTrack, this._demuxer.audioTrack)
   }
