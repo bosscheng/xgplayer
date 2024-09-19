@@ -110,6 +110,8 @@ export class MediaPlaylist {
   endPartIndex = 0
   /** @type {Array.<MediaSegment>} */
   segments = []
+  dateRanges = {}
+  skippedSegments = 0
 }
 
 export class MediaSegment {
@@ -228,5 +230,27 @@ export class MediaSegmentKey {
       return true
     }
     return false
+  }
+}
+
+export class HlsUrlParameters {
+  constructor (msn, part, skip) {
+    this.msn = msn
+    this.part = part
+    this.skip = skip
+  }
+
+  addDirectives (uri) {
+    const url = new self.URL(uri)
+    if (this.msn !== undefined) {
+      url.searchParams.set('_HLS_msn', this.msn.toString())
+    }
+    if (this.part) {
+      url.searchParams.set('_HLS_part', this.part.toString())
+    }
+    if (this.skip) {
+      url.searchParams.set('_HLS_skip', this.skip)
+    }
+    return url.href
   }
 }

@@ -1,6 +1,24 @@
+## 3.0.20
+>* fix: 🐛 (xgplayer-hls) 修复HlsOption类型未导出问题
+>* refactor: 💡 (xgplayer-hls) 对外提供 APPEND_BUFFER 时机
+>* refactor: 💡 支持hls abr能力
+>* refactor: 💡 (xgplayer) 对外提供switchUrl接口参数类型
+>* fix: 🐛 (xgplayer-hls) 修复hls switchUrl指定切换点时不生效的问题
+>* refactor: 💡 (xgplayer-hls) 提供abr切换时间点位
+>* refactor: 💡 (xgplayer-hls) 重构load接口，支持删除switchURL执行之后的状态
+>* fix: 🐛 (xgplayer-hls) load函数参数变更为可选
+>* refactor: 💡 (xgplayer-hls) 提供 detachMedia 接口
+
 ## 3.0.19
 >* fix: adts parser兼容异常case造成页面crash
 >* fix: m3u8 parser 兼容 EXT-X-ENDLIST出现在任意位置
+>* fix: 🐛 (xgplayer-hls) 修复重播时，视频播放到结尾一直loading的问题（重播时末尾buffer已下载）
+>* fix: (xgplayer-hls) m3u8 parser 兼容 EXT-X-ENDLIST出现在任意位置
+>* fix: (xgplayer-hls) playlist Live state
+>* fix: 🐛 (xgplayer-hls）修复hls最后一帧不渲染，并且播放到最后一直loading的问题
+>* fix(xgplayer-hls): 修复HLS点播场景空列表时未触发报错问题
+>* feat(xgplayer-hls xgplayer-transmuxer): HLS 音视频LargeGAP优化处理
+>* fix: 🐛 (xgplayer-hls) 修复播放到结尾一直loading的问题
 
 ## 3.0.18
 >* refactor: 💡 (xgplayer-hls) DRM支持更多的identifiers

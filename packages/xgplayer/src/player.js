@@ -28,6 +28,14 @@ import { InstManager, checkPlayerRoot } from './instManager'
  * @typedef { import ('./defaultConfig').IUrl } IUrl
  */
 
+/**
+ * @typedef {boolean | {
+ *    seamless?: boolean,
+ *    currentTime?: number,
+ *    bitrate?: number
+ * }} SwitchUrlOptions
+ */
+
 /* eslint-disable camelcase */
 const PlAYER_HOOKS = ['play', 'pause', 'replay', 'retry']
 let REAL_TIME_SPEED = 0 // 实时下载速率, kb/s
@@ -140,6 +148,13 @@ class Player extends MediaProxy {
      * @readonly
      * @type { boolean }
      */
+    this.isAd = false
+
+    /**
+     * @public
+     * @readonly
+     * @type { boolean }
+     */
     this.isError = false
 
     /**
@@ -215,8 +230,8 @@ class Player extends MediaProxy {
     this._cssfullscreenEl = null
 
     /**
-     * @type { IDefinition | null }
-     * @readonly
+     * @type { ?IDefinition }
+     * @public
      */
     this.curDefinition = null
     /**
@@ -285,7 +300,7 @@ class Player extends MediaProxy {
     this.innerContainer = null
 
     /**
-     * @type { null | Object }
+     * @type { ?Controls }
      * @readonly
      * @description 控制栏插件
      */
@@ -786,10 +801,7 @@ class Player extends MediaProxy {
       typeof position === 'string' &&
       position.indexOf('controls') > -1
     ) {
-      return (
-        this.controls &&
-        this.controls.registerPlugin(PLUFGIN, options, PLUFGIN.pluginName)
-      )
+      return this.controls?.registerPlugin(PLUFGIN, options, PLUFGIN.pluginName)
     }
     if (!options.root) {
       options.root = this._getRootByPosition(position)
@@ -949,7 +961,7 @@ class Player extends MediaProxy {
         if (!url) {
           url = this.url || this.config.url
         }
-        const _furl = this._preProcessUrl(url)
+        const _furl = this.preProcessUrl(url)
         const ret = this._startInit(_furl.url)
         return ret
       })
@@ -963,11 +975,7 @@ class Player extends MediaProxy {
 
   /**
    * @param { string | object } url
-   * @param { boolean | {
-   *    seamless?: boolean,
-   *    currentTime?: number,
-   *    bitrate?: number
-   * } } [options]
+   * @param { SwitchUrlOptions } [options]
    * @returns { Promise | null } 执行结果
    */
   switchURL (url, options) {
@@ -975,7 +983,7 @@ class Player extends MediaProxy {
     if (Util.typeOf(url) === 'Object') {
       _src = url.url
     }
-    _src = this._preProcessUrl(_src).url
+    _src = this.preProcessUrl(_src).url
     const curTime = this.currentTime
     this.__startTime = curTime
     const isPaused = this.paused && !this.isError
@@ -987,13 +995,7 @@ class Player extends MediaProxy {
         reject(e)
       }
       const _canplay = () => {
-        if (this.duration > 0 && this.__startTime > 0) {
-          /**
-           * @type {number}
-           */
-          this.currentTime = this.__startTime
-          this.__startTime = -1
-        }
+        this._seekToStartTime()
         if (isPaused) {
           this.pause()
         }
@@ -1392,7 +1394,7 @@ class Player extends MediaProxy {
     runHooks(this, 'retry', () => {
       const cur = this.currentTime
       const { url } = this.config
-      const _srcRet = !Util.isMSE(this.media) ? this._preProcessUrl(url) : { url }
+      const _srcRet = !Util.isMSE(this.media) ? this.preProcessUrl(url) : { url }
       this.src = _srcRet.url
       !this.config.isLive && (this.currentTime = cur)
       this.once(Events.CANPLAY, () => {
@@ -1517,7 +1519,7 @@ class Player extends MediaProxy {
       return
     }
     const { root, media } = this
-    if (el) {
+    if (!el) {
       el = root
     }
     this._fullActionFrom = 'exit'
@@ -1748,10 +1750,7 @@ class Player extends MediaProxy {
     const { autoplay, defaultPlaybackRate } = this.config
 
     XG_DEBUG.logInfo('player', 'canPlayFunc, startTime', this.__startTime)
-    if (this.__startTime > 0 && this.duration > 0) {
-      this.currentTime = this.__startTime > this.duration ? this.duration : this.__startTime
-      this.__startTime = -1
-    }
+    this._seekToStartTime()
 
     // 解决浏览器安装了一些倍速扩展插件的情况下，倍速设置失效问题
     this.playbackRate = defaultPlaybackRate;
@@ -1857,9 +1856,16 @@ class Player extends MediaProxy {
   onLoadeddata () {
     this.isError = false
     this.isSeeking = false
-    if (this.__startTime > 0 && this.duration > 0) {
-      this.currentTime = this.__startTime
-      this.__startTime = -1
+    if (this.__startTime > 0) {
+      if (this.duration > 0) {
+        this._seekToStartTime()
+      } else {
+        // 在安卓原生video播放hls时，loadeddata触发时durationchange事件虽然已经触发过了但duration仍然为0，
+        // 需要在下一次durationchange触发时再重新设置起播时间
+        this.once(Events.DURATION_CHANGE, () => {
+          this._seekToStartTime()
+        })
+      }
     }
   }
 
@@ -2286,11 +2292,23 @@ class Player extends MediaProxy {
    * @param { IUrl } url
    * @param { {[propName: string]: any} } [ext]
    * @returns { url: IUrl, [propName: string]: any }
+   * @public
    */
-  _preProcessUrl (url, ext) {
+  preProcessUrl (url, ext) {
     const { preProcessUrl, preProcessUrlOptions } = this.config
     const processUrlOptions = Object.assign({}, preProcessUrlOptions, ext)
     return !Util.isBlob(url) && typeof preProcessUrl === 'function' ? preProcessUrl(url, processUrlOptions) : { url }
+  }
+
+
+  /**
+   * @description 跳转至配置的起播时间点
+   */
+  _seekToStartTime () {
+    if (this.__startTime > 0 && this.duration > 0) {
+      this.currentTime = this.__startTime > this.duration ? this.duration : this.__startTime
+      this.__startTime = -1
+    }
   }
 
   /**

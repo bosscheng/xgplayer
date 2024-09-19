@@ -34,7 +34,8 @@ export default class Mp4Plugin extends BasePlugin {
       waitJampBufferMaxCnt:3,
       tickInSeconds: 0.1,
       reqOptions: null,
-      closeDowngrade: false
+      closeDowngrade: false,
+      preferMMS: false
     }
   }
 
@@ -368,21 +369,21 @@ export default class Mp4Plugin extends BasePlugin {
       await this.mse.unbindMedia()
       this.mse = null
     }
-    const isHvc = this.mp4 && this.mp4.checkCodecH265()
     const hasVideo = !!meta.videoCodec
     const hasAudio = !!meta.audioCodec
 
     let codec
     if (hasVideo && hasAudio) {
-      codec = isHvc ? 'video/mp4; codecs="hev1.1.6.L93.B0, mp4a.40.5"' : 'video/mp4; codecs="avc1.64001E, mp4a.40.5"'
+      codec = `video/mp4; codecs="${meta.videoCodec}, mp4a.40.5"`
     } else if (hasVideo) {
-      codec = isHvc ? 'video/mp4; codecs="hev1.1.6.L93.B0"' : 'video/mp4; codecs="avc1.64001E"'
+      codec = `video/mp4; codecs="${meta.videoCodec}"`
     } else {
       codec = 'video/mp4; codecs="mp4a.40.5"'
     }
 
     const contentTypes = { [MSE.VIDEO]: { mimeType: 'video/mp4', codec } }
-    this.mse = new MSE()
+
+    this.mse = new MSE(null, { preferMMS: this.config.preferMMS })
     const openPromise = this.mse.bindMedia(this.player.video)
     openPromise.then(()=> {
       const contentTypesLocal = Object.keys(contentTypes)

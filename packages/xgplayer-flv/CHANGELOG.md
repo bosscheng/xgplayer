@@ -1,7 +1,9 @@
+## 3.0.20
+feat: 🎸 (xgplayer-transmuxer) support opus codec for audio
+feat: 🎸 (flv&hls) support g711 play by AudioContext
 
 ## 3.0.19
 >* refactor: update download speed evaluate strategy, export configuration for speed evaluate
-
 ```
 const player = new Player({
     isLive: true,
@@ -13,6 +15,8 @@ const player = new Player({
     }
 })
 ```
+>* fix: disconnetcTime use buffer time instead buffer edge
+>* fix: (xgplayer-flv) preProcessUrl 容错处理
 
 ## xgplayer-flv@3.0.17
 >* fix: firstframe slow on lg webos

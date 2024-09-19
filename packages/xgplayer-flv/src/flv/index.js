@@ -17,6 +17,7 @@ import { Logger as TransmuxerLogger } from 'xgplayer-transmuxer'
 import { BufferService } from './services'
 import { getOption } from './options'
 import { searchKeyframeIndex } from './utils'
+import { TransferCost, TRANSFER_EVENT } from './services/transfer-cost'
 
 export const logger = new Logger('flv')
 
@@ -80,6 +81,7 @@ export class Flv extends EventEmitter {
     })
 
     this._disconnectRetryCount = this._opts.disconnectRetryCount
+    this._transferCost = new TransferCost()
 
     this._bufferService = new BufferService(
       this,
@@ -181,9 +183,9 @@ export class Flv extends EventEmitter {
       await this._clear()
 
       setTimeout(() => {
+        this._seamlessSwitching = true
         this._loadData(this._opts.url)
         this._bufferService.seamlessSwitch()
-        this._seamlessSwitching = true
       })
     } else {
       await this.load()
@@ -193,6 +195,7 @@ export class Flv extends EventEmitter {
 
   disconnect () {
     logger.debug('disconnect!')
+    this._bufferService?.resetSeamlessSwitchStats()
     return this._clear()
   }
 
@@ -204,6 +207,18 @@ export class Flv extends EventEmitter {
     if (!this._bufferService) return
 
     this._resetDisconnectCount()
+
+    if (this._loading && seamless) {
+      this._bufferService.seamlessLoadingSwitch = async (pts) => {
+        await this._clear()
+        this._bufferService.seamlessLoadingSwitching = true
+        this._urlSwitching = true
+        this._seamlessSwitching = true
+        this._bufferService.seamlessSwitch()
+        this._loadData(url)
+      }
+      return
+    }
 
     if (!seamless || !this._opts.isLive) {
       await this.load(url)
@@ -338,12 +353,14 @@ export class Flv extends EventEmitter {
         return
       }
       const headers = response.headers
+      const elapsed = st ? firstByteTime - st : endTime - startTime
       this.emit(EVENT.TTFB, {
         url: this._opts.url,
         responseUrl: response.url,
-        elapsed: st ? firstByteTime - st : endTime - startTime
+        elapsed
       })
       this.emit(EVENT.LOAD_RESPONSE_HEADERS, { headers })
+      this._transferCost.set(TRANSFER_EVENT.TTFB, elapsed)
       this._acceptRanges =
         !!headers?.get('Accept-Ranges') || !!headers?.get('Content-Range')
       this._firstProgressEmit = true
@@ -448,12 +465,12 @@ export class Flv extends EventEmitter {
     if (bufferEnd < MAX_HOLE || !media.readyState) return
 
     const opts = this._opts
-    if (isMediaPlaying(media)) {
+    if (isMediaPlaying(media) && media.currentTime) {
       if (this._gapService) {
         this._gapService.do(media, opts.maxJumpDistance, this.isLive, 3)
       }
     } else {
-      if (!media.currentTime && this._gapService) {
+      if (!media.currentTime && this._gapService && opts.enableStartGapJump) {
         // 起播跳洞检测
         const gapJump =
           this._opts.mseLowLatency ||
@@ -463,7 +480,7 @@ export class Flv extends EventEmitter {
         }
         return
       }
-      if (opts.isLive && media.readyState === 4 && bufferEnd > opts.disconnectTime) {
+      if (opts.isLive && media.readyState === 4 && (bufferEnd - media.currentTime) > opts.disconnectTime) {
         this.disconnect()
       }
     }

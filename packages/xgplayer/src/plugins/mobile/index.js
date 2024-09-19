@@ -64,7 +64,7 @@ class MobilePlugin extends Plugin {
       scopeR: 0.25, // Gesture range on the right
       scopeM: 0.9, // Middle gesture range
       pressRate: 2, // playbackRate when long press
-      darkness: true, // Whether to enable the dimming function on the right
+      darkness: true, // Whether to enable the dimming function on the left
       maxDarkness: 0.8, // Maximum darkness，maximum transparency of the mask
       disableActive: false, // Whether to disable the time prompt
       disableTimeProgress: false, // Whether to disable the time progress bar
@@ -161,7 +161,7 @@ class MobilePlugin extends Plugin {
     }
     this.on(Events.DURATION_CHANGE, () => {
       const { player, config } = this
-      if (player.duration * 1000 < config.moveDuration) {
+      if (player.duration > 0 && player.duration * 1000 < config.moveDuration) {
         config.moveDuration = player.duration * 1000
       }
     })
@@ -357,7 +357,7 @@ class MobilePlugin extends Plugin {
    */
   endLastMove (lastScope) {
     const { pos, player, config } = this
-  
+
     const time = (pos.time - this.timeOffset) / 1000
     switch (lastScope) {
       case 0:
@@ -614,10 +614,13 @@ class MobilePlugin extends Plugin {
   }
 
   updateBrightness (percent) {
+    const { pos, config, xgMask } = this
+    if (!config.darkness) {
+      return
+    }
     if (this.player.rotateDeg) {
       percent = -percent
     }
-    const { pos, config, xgMask } = this
     let light = pos.light + (0.8 * percent)
     light = light > config.maxDarkness ? config.maxDarkness : (light < 0 ? 0 : light)
     if (xgMask) {
@@ -679,12 +682,12 @@ class MobilePlugin extends Plugin {
 
   // 动态禁用手势
   disableGesture () {
-    this.config.disableGesture = false
+    this.config.disableGesture = true
   }
 
   // 动态启用手势
   enableGesture () {
-    this.config.disableGesture = true
+    this.config.disableGesture = false
   }
 
   destroy () {

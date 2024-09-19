@@ -125,11 +125,21 @@ export class BufferService {
 
   async appendBuffer (segment, audioSegment, videoChunk, audioChunk, discontinuity, contiguous, startTime) {
     if (!videoChunk?.length && !audioChunk?.length) return
+
+    const afterAppend = () => {
+      if (this.hls?.emit) {
+        this.hls?.emit(EVENT.APPEND_BUFFER, {
+          start: segment.start,
+          end: segment.end
+        })
+      }
+    }
+
     if (this._directAppend) {
       const p = []
       if (videoChunk) p.push(this._mse.append(MSE.VIDEO, videoChunk))
       if (audioChunk) p.push(this._mse.append(MSE.AUDIO, audioChunk))
-      return Promise.all(p)
+      return Promise.all(p).then(afterAppend)
     }
     const needInit = this._needInitSegment || discontinuity
     const [video, audio] = this._transmuxer.transmux(videoChunk, audioChunk, needInit, contiguous, startTime, this._needInitSegment || discontinuity)
@@ -154,10 +164,12 @@ export class BufferService {
     if (this._softVideo) {
       this._softVideo.appendBuffer(video, audio)
       this._needInitSegment = false
+
+      afterAppend()
     } else if (this._mse) {
       const isFirstAppend = !this._sourceCreated
       if (isFirstAppend) {
-        this._createMseSource(video?.codec, audio?.codec)
+        this._createMseSource(video?.codec, audio?.codec, audio?.container)
       }
       this._needInitSegment = false
       const mse = this._mse
@@ -176,7 +188,7 @@ export class BufferService {
         const {data: audioData, ...audioRest} = audio
         p.push(mse.append(MSE.AUDIO, audioData, audioRest))
       }
-      return Promise.all(p)
+      return Promise.all(p).then(afterAppend)
     }
   }
 
@@ -235,11 +247,15 @@ export class BufferService {
     if (this._mse) this._mse.setLiveSeekableRange(start, end)
   }
 
-  async destroy () {
-    this._decryptor?.destroy()
+  async detachMedia () {
     if (this._mse) {
       await this._mse.unbindMedia()
     }
+  }
+
+  async destroy () {
+    this._decryptor?.destroy()
+    await this.detachMedia()
 
     this._decryptor = null
     this._mse = null
@@ -249,7 +265,7 @@ export class BufferService {
   /**
    * @private
    */
-  _createMseSource (videoCodec, audioCodec) {
+  _createMseSource (videoCodec, audioCodec, container) {
     logger.debug(`create mse source, videoCodec=${videoCodec}, audioCodec=${audioCodec}`)
     const mse = this._mse
     if (!mse) return
@@ -259,6 +275,9 @@ export class BufferService {
     }
     if (audioCodec) {
       mse.createSource(MSE.AUDIO, `audio/mp4;codecs=${audioCodec}`)
+      this._sourceCreated = true
+    } else if (container) {
+      mse.createSource(MSE.AUDIO, `${container};codecs=""`)
       this._sourceCreated = true
     }
     this.hls.emit(EVENT.SOURCEBUFFER_CREATED)
