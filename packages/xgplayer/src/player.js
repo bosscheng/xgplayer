@@ -161,6 +161,7 @@ class Player extends MediaProxy {
      * @private
      */
     this._hasStart = false
+
     /**
      * Whether the player is in the seeking state
      * @type { boolean }
@@ -591,11 +592,11 @@ class Player extends MediaProxy {
   }
 
   /**
-   *
    * @param { any } [url]
+   * @param { { playSessionId?: number  } } [options]
    * @returns
    */
-  _startInit (url) {
+  _startInit (url, options = {}) {
     if (!this.media) {
       return
     }
@@ -612,6 +613,12 @@ class Player extends MediaProxy {
       if (this.config.nullUrlStart) {
         return
       }
+    }
+
+    if (Util.isNotNull(options.playSessionId)) {
+      // PlaySessionId, used to identify a single play session,
+      // for internal use by the player
+      this._playSessionId = options.playSessionId
     }
 
     if (this.handleSource) {
@@ -936,6 +943,12 @@ class Player extends MediaProxy {
     if (this.state > STATES.ATTACHING) {
       return
     }
+
+    const playSessionId = this._playSessionId
+    if (Util.isNotNull(playSessionId)) {
+      this._playSessionId = undefined
+    }
+
     if (!url && !this.config.url) {
       this.getInitDefinition()
     }
@@ -954,7 +967,7 @@ class Player extends MediaProxy {
           url = this.url || this.config.url
         }
         const _furl = this.preProcessUrl(url)
-        const ret = this._startInit(_furl.url)
+        const ret = this._startInit(_furl.url, { playSessionId })
         return ret
       })
       .catch((e) => {
@@ -1290,7 +1303,7 @@ class Player extends MediaProxy {
 
     if (isResetConfig) {
       const de = getDefaultConfig()
-      Object.keys(this.config).keys((k) => {
+      Object.keys(this.config).forEach((k) => {
         if (
           this.config[k] !== 'undefined' &&
           (k === 'plugins' || k === 'presets' || k === 'el' || k === 'id')
@@ -1617,7 +1630,9 @@ class Player extends MediaProxy {
     this.fullscreen = true
     this.setRotateDeg(90)
     this._rootStyle = this.root.getAttribute('style')
-    this.root.style.width = `${window.innerHeight}px`
+    const isRotate90 = Math.abs(window.orientation) === 90 || Math.abs(screen.orientation.angle) === 90
+    // 如果已经是横屏状态，则取innerWidth，否则取innerHeight
+    this.root.style.width = isRotate90 ? `${window.innerWidth}px` : `${window.innerHeight}px`
     this.emit(Events.FULLSCREEN_CHANGE, true)
   }
 
