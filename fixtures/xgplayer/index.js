@@ -296,8 +296,8 @@ function init(index = 0, config = {}) {
     pip: true,
     loop: false,
     autoplay: false,
-    autoplayMuted: true,
-    videoInit: true,
+    autoplayMuted: false,
+    // videoInit: true,
     preloadTime: 20,
     width: '96%',
     ignores:[],
@@ -320,9 +320,9 @@ function init(index = 0, config = {}) {
     progress: {
       // root: document.getElementById('controls0')
     },
-    DynamicBg: {
-      disable: false
-    },
+    // DynamicBg: {
+    //   disable: false
+    // },
     volume: {
       position: 'rootTop'
     },
