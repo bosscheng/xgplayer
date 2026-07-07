@@ -58,6 +58,14 @@ git push origin --tags
 - **稳定版 tag**（如 `v3.2.1`）：发布 npm、创建 GitHub Release，并自动将版本变更 commit 到 `main`
 - **非稳定版 tag**（如 `v3.2.1-rc.1`）：发布 npm、创建 GitHub Prerelease，不改动 `main`
 
+## Release Notes
+
+GitHub Release notes 由 CI 自动生成。正式版本比较当前版本之前最新的正式版 tag（`vX.Y.Z`）。非正式版本比较最临近的上一个版本 tag，有可用的非正式版本 tag 时也会参与比较。
+
+### 自动 Release Notes 注意事项
+
+`What's Changed` 由发布工作流调用 GitHub 的 `generateReleaseNotes` API 生成，不是本地解析 commit log。它主要展示所选 compare 范围内的 merged PR。direct commit 可能只出现在 `Full Changelog` 中，如需对外说明，需要手动补充到 release body。
+
 ## CI 工作流说明
 
 执行文件：[.github/workflows/publish.yml](.github/workflows/publish.yml)

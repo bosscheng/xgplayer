@@ -33,6 +33,7 @@ export default class Rotate extends IconPlugin {
     super.afterCreate()
     this.appendChild('.xgplayer-icon', this.icons.rotate)
     this.onBtnClick = this.onBtnClick.bind(this)
+    this._clickTimeStamp = 0
     this.bind('.xgplayer-icon', ['click', 'touchend'], this.onBtnClick)
     // 全屏/css全屏/容器宽高发生变化 需要重新计算
     this.on(Events.VIDEO_RESIZE, () => {
@@ -58,6 +59,11 @@ export default class Rotate extends IconPlugin {
   }
 
   onBtnClick (e) {
+    const now = Date.now()
+    if (now - this._clickTimeStamp < 300) {
+      return
+    }
+    this._clickTimeStamp = now
     e.preventDefault()
     e.stopPropagation()
     this.emitUserAction(e, 'rotate')
