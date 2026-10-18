@@ -262,6 +262,15 @@ export default class ProgressPreview extends Plugin {
     }
   }
 
+  /**
+   * 按 1 / DPR 的步长将 CSS 像素值对齐到物理像素边界。
+   * 如 DPR 为 2 时，物理像素对应的 CSS 步长为 0.5px，100.3px 会对齐为 100.5px。
+   */
+  alignToDevicePixel (value) {
+    const pixelRatio = Util.getPixelRatio()
+    return Math.round(value * pixelRatio) / pixelRatio
+  }
+
   updateLinePos (offset, cwidth) {
     const { root, previewLine, player, config } = this
     const { mode } = player.controls
@@ -271,7 +280,8 @@ export default class ProgressPreview extends Plugin {
     if (!lwidth && this._hasThumnail) {
       return
     }
-    lwidth = this._hasThumnail && lwidth < config.width ? config.width : lwidth
+    const previewWidth = this.alignToDevicePixel(config.width)
+    lwidth = this._hasThumnail && lwidth < previewWidth ? previewWidth : lwidth
     let x = offset - lwidth / 2
     let _t
     if (x < 0 && !isflex) {
@@ -283,8 +293,10 @@ export default class ProgressPreview extends Plugin {
     } else {
       _t = 0
     }
+    // 避免预览框边缘落在亚像素上导致 1px 边框发虚
+    x = this.alignToDevicePixel(x)
     _t !== undefined && (previewLine.style.transform = `translateX(${_t.toFixed(2)}px)`)
-    root.style.transform = `translateX(${x.toFixed(2)}px) translateZ(0)`
+    root.style.transform = `translateX(${x}px) translateZ(0)`
   }
 
   updateTimeText (timeStr) {
@@ -334,7 +346,14 @@ export default class ProgressPreview extends Plugin {
     const { player, videoPreview, config } = this
     const { thumbnail } = player.plugins
     if (thumbnail && thumbnail.usable) {
-      this.thumbnail && thumbnail.update(this.thumbnail, time, config.width, config.height)
+      if (this.thumbnail) {
+        const width = this.alignToDevicePixel(config.width)
+        const height = this.alignToDevicePixel(config.height)
+        thumbnail.update(this.thumbnail, time, width, height, {
+          width: `${width}px`,
+          height: `${height}px`
+        })
+      }
       const rect = videoPreview && videoPreview.getBoundingClientRect()
       this.videothumbnail && thumbnail.update(this.videothumbnail, time, rect.width, rect.height)
     }

@@ -18,6 +18,7 @@ import I18N from './lang/i18n'
 import version from './version'
 import { STATES, STATE_ARRAY } from './state'
 import { InstManager, checkPlayerRoot } from './instManager'
+import { isLandscapeScreen } from './utils/screen'
 
 /**
  * @typedef { import ('./defaultConfig').IPlayerOptions } IPlayerOptions
@@ -864,12 +865,12 @@ class Player extends MediaProxy {
 
   /**
    * get a plugin instance
-   * @param { string } pluginName
+   * @param { string | function } condition
    * @return { null | any } plugin
    */
-  getPlugin (pluginName) {
-    const plugin = pluginsManager.findPlugin(this, pluginName)
-    return plugin && plugin.pluginName ? plugin : null
+  getPlugin (condition) {
+    const plugin = pluginsManager.findPlugin(this, condition)
+    return plugin?.pluginName ? plugin : null
   }
 
   /**
@@ -1276,6 +1277,8 @@ class Player extends MediaProxy {
     this.isError = false
     this._useAutoplay = false
     this.mediaPause()
+    this._currentTime = 0
+    this._duration = 0
     this._accPlayed.acc = 0
     this._accPlayed.t = 0
     this._accPlayed.loopAcc = 0
@@ -1637,7 +1640,7 @@ class Player extends MediaProxy {
     this.fullscreen = true
     this.setRotateDeg(90)
     this._rootStyle = this.root.getAttribute('style')
-    const isRotate90 = Math.abs(window.orientation) === 90 || Math.abs(screen.orientation.angle) === 90
+    const isRotate90 = isLandscapeScreen()
     // 如果已经是横屏状态，则取innerWidth，否则取innerHeight
     this.root.style.width = isRotate90 ? `${window.innerWidth}px` : `${window.innerHeight}px`
     this.emit(Events.FULLSCREEN_CHANGE, true)
@@ -2205,8 +2208,6 @@ class Player extends MediaProxy {
   playNext (config) {
     this.resetState()
     this.setConfig(config)
-    this._currentTime = 0
-    this._duration = 0
     runHooks(this, 'playnext', () => {
       this.start()
       this.emit(Events.PLAYNEXT, config)

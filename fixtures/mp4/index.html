@@ -29,6 +29,7 @@
   var vConsole = new window.VConsole();
   import Player from '../../packages/xgplayer/src/index'
   import Mp4Plugin  from '../../packages/xgplayer-mp4/src/index'
+  const demoUrl = 'https://lf3-static.bytednsdoc.com/obj/eden-cn/nupenuvpxnuvo/xgplayer_doc/xgplayer-demo-720p.mp4'
   var videoList = [
     {
       definition: '360p',
@@ -73,7 +74,7 @@
     volume: 0.2,
     // url: 'http://tosv.byted.org/obj/media-fe/badcase/av-not-sync-hevc.mp4',
     // url:'https://lf3-static.bytednsdoc.com/obj/eden-cn/nupenuvpxnuvo/xgplayer_doc/xgplayer-demo-720p.mp4',
-    url: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/nupenuvpxnuvo/xgplayer_doc/xgplayer-demo-720p.mp4?test=10',
+    url: `${demoUrl}?test=10`,
     poster: "//lf3-static.bytednsdoc.com/obj/eden-cn/nupenuvpxnuvo/xgplayer_doc/poster.jpg",
     playsinline: true,
     thumbnail: {
@@ -97,20 +98,25 @@
     // },
     height: window.innerHeight -300,
     width: window.innerWidth,
-    // plugins: [Mp4Plugin],
-    // mp4plugin: {
-    //   // enableWorker:true,
-    //   disableBufferBreakCheck:true,
-    //   memoryOpt:true,
-    // }
-    waitingInBufferTimeOut: 5000,
     plugins: [Mp4Plugin],
+    // mp4 插件配置（key 为 'mp4'）
+    mp4: {
+      // enableWorker: true,          // demux/remux 放到 Worker 线程
+      // preferMMS: true,             // iOS 17.1+ / Safari 使用 ManagedMediaSource（issue #1932）
+      // closeDowngrade: false,       // 出错时是否关闭「降级到原生 video」
+      // disableBufferBreakCheck: false,
+      // waitingInBufferTimeOut: 5000,
+      // reqOptions: {                // 透传给 loader 的请求配置
+      //   mode: 'cors',
+      //   method: 'GET',
+      //   headers: { 'x-test-header': 'rrrr' }
+      // }
+    }
   });
   window.player = player
   window.player.on('networkError', (err) => {
       console.log(err);
   })
-
   function playNext() {
     player.playNext({
       vid: 'v02d02g10000cag6m4gmmdqu846g76ag123',
@@ -118,7 +124,7 @@
       isLive: false,
       autoplay: true,
       // plugins: [Mp4Plugin],
-      url: './video/1080p.mp4'
+      url: `${demoUrl}?test=play-next`
     })
   }
   window.playNext = playNext

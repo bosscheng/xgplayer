@@ -10,6 +10,8 @@ Global agent map for this repo. Keep package-specific design/background in packa
 | Package metadata/docs | `packages/*/{package.json,README.md,CHANGELOG.md}` |
 | Build tooling | `scripts/{cli.js,commands/,workflow/}` |
 | Demos/repros | `fixtures/<format>/` |
+| Quality gates | `docs/ai-harness/quality-gates.md` |
+| TS configs | `tsconfig.json`, `tsconfig.test.json` |
 | Repo commands | root `package.json` |
 | Lint/test config | `biome.json`, `jest.config.js`, `jest.setup.js` |
 | Release process | `.github/release-guideline.md` |
@@ -22,20 +24,17 @@ Global agent map for this repo. Keep package-specific design/background in packa
 | Demo | `yarn dev:<format>` |
 | Build | `yarn build` / `yarn build:all` |
 | Lint/format | `yarn lint` / `yarn format` |
+| Typecheck (TS strict) | `yarn typecheck` |
+| Staged format | `yarn format:staged` |
 | Test | `yarn test` / `yarn test:ci` |
+| Quiet test | `yarn test --verbose=false --silent` |
 
 ## Rules
 
 - Package manager: Yarn 1.x only; only touch `yarn.lock`.
+- TS migration: root `tsconfig.json` strict-checks all package TS source while `allowJs` + `checkJs: false` keeps unmigrated JS outside type checking; `tsconfig.test.json` adds TS tests. `yarn typecheck` runs both and is enforced in pre-commit. Published TS packages keep a thin package `tsconfig.json` to define their declaration source boundary; do not infer whole-package language from the entry extension or add package configs where declaration requirements do not differ.
 - Dependencies: keep pins deliberate; do not loosen/downgrade ad hoc.
-- Architecture: preserve plugin-first design; keep feature logic out of core.
-- Shared APIs: update affected downstream packages when shared APIs change.
-- Maintainability: prefer shared modules/factories and thin adapters over duplicated variant logic.
-- Generated code: separate/mark generated or vendored output; exclude from lint/format when needed.
-- Build outputs: document source, destination, and verification for scripts that create published files.
-- Public API: preserve entry points/options/events unless explicitly breaking; update demos/docs.
-- Quality: run Biome for touched JS/TS; keep relevant tests green.
-- Commits: conventional commits; use `monorepo` or `*` for cross-package changes.
+- Commits: use meaningful conventional commit titles, `monorepo` or `*` for cross-package changes, and a short body for non-trivial changes covering problem and key change.
 - CHANGELOG: only add entries for stable releases (patch/minor/major); skip prerelease tags (`rc`/`alpha`/`beta`) — fold their commits into the next stable entry.
 
 ## Never
